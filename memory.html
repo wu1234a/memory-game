@@ -13,6 +13,10 @@
             height: 362px;
             margin: 50px auto;
         }
+        .wrap h3 { 
+            text-align: center;
+            line-height: 48px;
+            }
         #main {
             width: 100%;
             height: 100%;
@@ -32,7 +36,11 @@
             text-align: center;
         }
         .control {
+            width: 100%;
             margin-top: 20px;
+            display: flex;
+            flex-flow: row;
+            justify-content: space-between;
         }
         .right {
             background-color: #066;
@@ -46,48 +54,53 @@
 </head>
 <body>
     <div class="wrap">
+        <h3>15秒记忆力大考验</h3>
         <div id="main">
-            <box v-for="(item, index) in items" :key="index" :num = "item" :times = "times"></box>
+            <box v-for="(item, index) in items" :key="index" :num = "item" :times = "times" :rest = "rest" :add-times.sync = 'times'></box>
             <div class="control">
                 <button @click="reStart">重新开始</button>
+                <p>用时：{{time}} 秒</p>
             </div>
         </div>       
     </div>
     <template id="box">
-        <li class="box" @click="clickBox" :class="{right: isRight, wrong: isWrong}">
-            <p>{{num}}</p>
+        <li class="box" @click="clickBox()" :class="{right: isRight, wrong: isWrong}" :data-id=num.id>
+            <p>{{num.val}}</p>
         </li>
     </template>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
     <script type="module">
         Vue.component('box', {
             template: '#box',
-            props: ['num', 'times'],
+            props: ['num', 'times', 'rest'],
             data() {
                 return {
                     isRight: false,
                     isWrong: false,
+                    isNum: 0
                 }
             },
-            // #TODO 更改点击次数没有完成
+
             methods: {
                 clickBox: function() {
-                    let t = this.times
-                    console.log(t)
-                    if(this.num == this.times) {
+                    console.log(this.times)
+                    let t = this.times + 1
+                    if(this.num.val == this.times) {
                         this.isRight = true;
-                        this.$emit('update:times', t+1)
+                        this.isWrong = false
+                        console.log(t)
+                        this.$emit('update:add-times', t)
                     }else {
-                        this.isWrong = true;
+                        // this.isWrong = true;
                     }
                     
                 }
             },
             watch: {
-                'num': function(newnum) {
+                'rest': function(newnum) {
+                    console.log(1111)
                     this.isRight = false
                     this.isWrong = false
-                    this.times = 1
                 }
             }
         })
@@ -95,11 +108,15 @@
             el: '#main',
             data: {
                 items: [],
-                times: 1
+                times: 1,
+                rest: false,
+                time: 0,
+                timeSend: null
             },
 
             created: function() {
                 this.buildBox();
+                this.totalTime();
             },
 
             methods: {
@@ -115,7 +132,10 @@
                     while ( i < 25 ) {
                         let data = Math.floor(Math.random()*25 + 1)
                         if (this.isRepeat(data, arr)) {
-                            arr[i] = data
+                            arr[i] = {
+                                val: data,
+                                id: i
+                            }
                             i++
                         }
                     } 
@@ -123,22 +143,30 @@
                 },
 
                 /* 
-                ** @desc: 重置方格数字
+                ** @desc: 重置方格数字与样式
                 ** @method: reStart
                 ** @param:
-                ** @key: 由于JavaScript的限制，Vue不能检测arr          [index]=newval 该类数组的变化，因此           需要使用Vue.set(arr, index, newval)
+                ** @key: 通过改变rest的值来重置方格的背景样式
                 */
                 reStart: function() {
+                    clearInterval(this.timeSend)
                     let arr = new Array();
                     let i = 0
                     while ( i < 25 ) {
                         let data = Math.floor(Math.random()*25 + 1)
                         if (this.isRepeat(data, arr)) {
-                            Vue.set(this.items, i, data)
-                            arr[i] = data
+                            arr[i] = {
+                                val: data,
+                                id: i
+                            }
                             i++
                         }
-                    }
+                    } 
+                    this.items = arr;
+                    this.rest = !this.rest
+                    this.times = 1
+                    this.time = 0
+                    this.totalTime();
                 },
                 /* 
                 ** @desc: 检测元素是否在数组中存在
@@ -146,13 +174,24 @@
                 ** @param: el 
                 ** @return: {bool} true or false 
                 */
-                isRepeat: function(el, arr) {
-                    let str = arr.join(',');
-                    if(arr.indexOf(el) > 0) {
-                        return false
-                    }else if(arr.indexOf(el) === -1){
-                        return true
+                isRepeat: function(element, arr) {
+                    for (let j = 0; j < arr.length; j++) {
+                        if (arr[j]['val'] === element) {
+                            return false;
+                        }
                     }
+                    return true;
+                },
+
+                totalTime: function(){
+                    this.timeSend = setInterval(() => {
+                        this.time++
+                        if(this.time>15) {
+                            alert('你的记忆力是猪啊！！！')
+                            clearInterval(this.timeSend)
+                            this.time = 0
+                        }
+                    }, 1000)
                 }
             }
         })
