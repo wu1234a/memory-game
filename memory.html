@@ -9,9 +9,10 @@
         * { margin: 0; padding: 0; }
 		li,ul { list-style: none; }
         .wrap {
-            width: 362px;
+            width: 724px;
             height: 362px;
             margin: 50px auto;
+            box-sizing: border-box;
         }
         .wrap h3 { 
             text-align: center;
@@ -21,10 +22,15 @@
             width: 100%;
             height: 100%;
             display: flex;
+            flex-flow: row;
+            box-sizing: border-box;            
+        }
+        .main { 
+            flex: 0 0 50%;
+            display: flex;
             flex-flow: wrap;
             box-sizing: border-box;
-            border: 1px solid #ddd;
-        }
+            }
         .box {
             background-color: #fff;
             border: 1px solid #ddd;
@@ -46,9 +52,22 @@
             background-color: #066;
             color: #fff;
         }
-        .wrong {
-            background-color: #903;
-            color: #fff;
+        .top {
+            flex: 0 0 50%;
+            padding: 0 15px;
+            overflow: scroll;
+        }
+        .top li {
+            display: flex;
+            flex-flow: row;
+            justify-content: space-around;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 8px;            
+        }
+        .top li span { 
+            display: block;
+            flex: 1;
+            text-align: center;
         }
     </style>
 </head>
@@ -56,51 +75,67 @@
     <div class="wrap">
         <h3>15秒记忆力大考验</h3>
         <div id="main">
-            <box v-for="(item, index) in items" :key="index" :num = "item" :times = "times" :rest = "rest" :add-times.sync = 'times'></box>
-            <div class="control">
-                <button @click="reStart">重新开始</button>
-                <p>用时：{{time}} 秒</p>
+            <div class="main">
+                <box v-for="(item, index) in items" :key="index" :num = "item" :times = "times" :rest = "rest" :add-times.sync = 'times' :time-count.sync = 'timeCount'></box>
+                <div class="control">
+                    <button @click="startGame">开始游戏</button>
+                    <!-- <button @click="stopGame">停止游戏</button> -->
+                    <p>用时：{{time}} 秒</p>
+                </div>
+            </div>            
+            <div class="top">
+                <h3>记忆力排行榜</h3>
+                <ul>
+                    <li>
+                        <span>排名</span>
+                        <span>姓名</span>
+                        <span>成绩</span>
+                    </li>
+                    <li v-for="(player, k) in players" :key="k">
+                        <span>{{ k+1 }}</span>
+                        <span>{{ player.name }}</span>
+                        <span>{{ player.score }} 秒</span>
+                    </li>
+                </ul>
             </div>
         </div>       
     </div>
     <template id="box">
-        <li class="box" @click="clickBox()" :class="{right: isRight, wrong: isWrong}" :data-id=num.id>
+        <li class="box" @click="clickBox()" :class="{right: isRight}" :data-id=num.id>
             <p>{{num.val}}</p>
         </li>
     </template>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.19.0/dist/axios.min.js"></script>
     <script type="module">
+        Vue.prototype.$ajax = axios;
+
         Vue.component('box', {
             template: '#box',
             props: ['num', 'times', 'rest'],
             data() {
                 return {
                     isRight: false,
-                    isWrong: false,
                     isNum: 0
                 }
             },
 
             methods: {
                 clickBox: function() {
-                    console.log(this.times)
                     let t = this.times + 1
                     if(this.num.val == this.times) {
                         this.isRight = true;
                         this.isWrong = false
-                        console.log(t)
                         this.$emit('update:add-times', t)
-                    }else {
-                        // this.isWrong = true;
-                    }
-                    
+                        if(t == 26){
+                            this.$emit('update:time-count', true)
+                        }
+                    }                
                 }
             },
             watch: {
                 'rest': function(newnum) {
-                    console.log(1111)
                     this.isRight = false
-                    this.isWrong = false
                 }
             }
         })
@@ -108,15 +143,41 @@
             el: '#main',
             data: {
                 items: [],
-                times: 1,
-                rest: false,
-                time: 0,
-                timeSend: null
+                times: 1, // 正确点击次数
+                rest: false, // 重置标识
+                time: 0, // 计时
+                timeSend: null,
+                timeCount: false,
+                players: JSON.parse(localStorage.getItem('list'))
             },
 
             created: function() {
+                // 创建方格
                 this.buildBox();
+                // 开始计时
                 this.totalTime();
+            },
+
+            watch: {
+                'timeCount': function(res) {
+                    if(res){
+                        clearInterval(this.timeSend)
+                        if(this.time > 20){
+                            alert("一共花费：" + this.time + "秒!你的记忆力相当于一头猪！")
+                        }else if(this.time > 15 && this.time  <= 20){
+                            alert("一共花费：" + this.time + "秒!你的记忆力也就比一头猪强！")
+                        }else if(this.time > 13 && this.time  <= 15) {
+                            alert("一共花费：" + this.time + "秒!你的记忆力处于普通人范围！")
+                        }else if(this.time > 10 && this.time  <= 13) {
+                            alert("一共花费：" + this.time + "秒!很棒，你的记忆力比一般人强！")
+                        }else if(this.time < 10) {
+                            alert("一共花费：" + this.time + "秒!卧槽，你还是人么！")
+                        }                       
+                        this.timeCount = false
+                        let name = prompt('输入您的姓名', '')
+                        this.upload(name, this.time)
+                    }
+                }
             },
 
             methods: {
@@ -144,11 +205,11 @@
 
                 /* 
                 ** @desc: 重置方格数字与样式
-                ** @method: reStart
+                ** @method: startGame
                 ** @param:
                 ** @key: 通过改变rest的值来重置方格的背景样式
                 */
-                reStart: function() {
+                startGame: function() {
                     clearInterval(this.timeSend)
                     let arr = new Array();
                     let i = 0
@@ -168,10 +229,15 @@
                     this.time = 0
                     this.totalTime();
                 },
+
+                stopGame: function() {
+                    clearInterval(this.timeSend)
+                },
+
                 /* 
                 ** @desc: 检测元素是否在数组中存在
                 ** @method: isRepeat
-                ** @param: el 
+                ** @param: element 要检测的元素，arr 元素所在的数组 
                 ** @return: {bool} true or false 
                 */
                 isRepeat: function(element, arr) {
@@ -183,15 +249,44 @@
                     return true;
                 },
 
+                /* 
+                ** @desc: 计时函数，当时间等于15秒是，跳出提示
+                ** @method: totalTime
+                ** @param: 
+                ** @return:  
+                */
                 totalTime: function(){
                     this.timeSend = setInterval(() => {
                         this.time++
-                        if(this.time>15) {
-                            alert('你的记忆力是猪啊！！！')
-                            clearInterval(this.timeSend)
-                            this.time = 0
-                        }
+                        // if(this.time>15) {
+                        //     alert('你的记忆力是猪啊！！！')
+                        //     clearInterval(this.timeSend)
+                        //     this.time = 0
+                        // }
                     }, 1000)
+                },
+
+                /* 
+                ** @desc: 上传名字和成绩
+                ** @method: upload
+                ** @param: {string} name 名字, {number} seconds 成绩
+                ** @return:  
+                ** @key: 这里用到了VUE的AJAX，需要引入AXIOS，在头部首先全局定义了$ajax = axios
+                */
+                upload: function(name, seconds) {
+                    let params = new URLSearchParams()
+                    let that = this;
+                    params.append('name', name)
+                    params.append('seconds', seconds)
+
+                    this.$ajax({
+                        method: 'post',
+                        url: 'top.php',
+                        data: params
+                    }).then( (res) => {
+                        that.players = res.data
+                        localStorage.setItem('list', JSON.stringify(res.data));
+                    })
                 }
             }
         })
