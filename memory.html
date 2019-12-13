@@ -110,6 +110,7 @@
     <script type="module">
         Vue.prototype.$ajax = axios;
 
+        // 方格组件
         Vue.component('box', {
             template: '#box',
             props: ['num', 'times', 'rest'],
@@ -121,11 +122,17 @@
             },
 
             methods: {
+                /*
+                ** @desc: clickBox 点击方块的函数，点击正确的方块并计数，通过正确点击次数与方块数字相比较，是否按顺序点击方块，如果是，add-times加1次，并更改方块样式。如果所有方块都点完，则更改time-count的值
+                ** @method: vm.$emit(event, newval)
+                ** @param:
+                ** @return:
+                ** @key: this.$emit 子组件更新父组件的方法，通过在父组件中绑定子组件:add-times.sync='times' 
+                */
                 clickBox: function() {
                     let t = this.times + 1
                     if(this.num.val == this.times) {
                         this.isRight = true;
-                        this.isWrong = false
                         this.$emit('update:add-times', t)
                         if(t == 26){
                             this.$emit('update:time-count', true)
@@ -134,11 +141,18 @@
                 }
             },
             watch: {
+                /*
+                ** @desc: rest 监听rest变量的值，来判断游戏是否重新开始，重置方块所有的样式
+                ** @method:
+                ** @param:
+                ** @return:
+                */
                 'rest': function(newnum) {
                     this.isRight = false
                 }
             }
         })
+
         var v = new Vue({
             el: '#main',
             data: {
@@ -147,10 +161,10 @@
                 rest: false, // 重置标识
                 time: 0, // 计时
                 timeSend: null,
-                timeCount: false,
+                timeCount: false, // 方块点完标识
                 players: JSON.parse(localStorage.getItem('list'))
             },
-
+            // TODO 应当增加一个载入网页时，导入成绩的方法
             created: function() {
                 // 创建方格
                 this.buildBox();
@@ -159,6 +173,12 @@
             },
 
             watch: {
+                /*
+                ** @desc: timeCount 监听方块是不是点完25块
+                ** @method: clearInterval(intervalID) 取消设置的计数任务
+                ** @param:
+                ** @return:
+                */
                 'timeCount': function(res) {
                     if(res){
                         clearInterval(this.timeSend)
@@ -182,8 +202,8 @@
 
             methods: {
                 /* 
-                ** @desc: 创建25块方格
-                ** @method: buildBox
+                ** @desc: buildBox 创建25块方格
+                ** @method: Math.floor(number) 向下取整  Math.random() 返回0-1之间包含0，不包含1的浮点数  isRepeat(data, array) 判断二维数组中是否有data的重复数据
                 ** @param:
                 ** @return: {Array} arr 返回方格集合
                 */
@@ -204,8 +224,8 @@
                 },
 
                 /* 
-                ** @desc: 重置方格数字与样式
-                ** @method: startGame
+                ** @desc: startGame 重新开始游戏；首先清空计时时间，然后随机重新生成数字排序，重置时间、正确点击数，并重新开始计时
+                ** @method: clearInterval(intervalID) 取消计时任务  totalTime() 计时函数
                 ** @param:
                 ** @key: 通过改变rest的值来重置方格的背景样式
                 */
@@ -235,9 +255,9 @@
                 },
 
                 /* 
-                ** @desc: 检测元素是否在数组中存在
-                ** @method: isRepeat
-                ** @param: element 要检测的元素，arr 元素所在的数组 
+                ** @desc: isRepeat 检测元素是否在数组中存在,如果存在返回false，如果不存在,返回true
+                ** @param: element 要检测的元素，arr 元素所在的数组
+                ** @method: 
                 ** @return: {bool} true or false 
                 */
                 isRepeat: function(element, arr) {
@@ -250,25 +270,20 @@
                 },
 
                 /* 
-                ** @desc: 计时函数，当时间等于15秒是，跳出提示
-                ** @method: totalTime
+                ** @desc: totalTime 计时函数
+                ** @method: setInterval(code, millisec) code 调用代码或要执行的代码串 millisec 周期性执行或调用code之间的时间间隔，以毫秒计
                 ** @param: 
-                ** @return:  
+                ** @return:  this.time
                 */
                 totalTime: function(){
                     this.timeSend = setInterval(() => {
                         this.time++
-                        // if(this.time>15) {
-                        //     alert('你的记忆力是猪啊！！！')
-                        //     clearInterval(this.timeSend)
-                        //     this.time = 0
-                        // }
                     }, 1000)
                 },
 
                 /* 
-                ** @desc: 上传名字和成绩
-                ** @method: upload
+                ** @desc: upload 上传名字和成绩
+                ** @method: 
                 ** @param: {string} name 名字, {number} seconds 成绩
                 ** @return:  
                 ** @key: 这里用到了VUE的AJAX，需要引入AXIOS，在头部首先全局定义了$ajax = axios
