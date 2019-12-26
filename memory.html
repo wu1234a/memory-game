@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>记忆力游戏</title>
+    <title>注意力游戏</title>
     <style>
         * { margin: 0; padding: 0; }
 		li,ul { list-style: none; }
@@ -73,7 +73,7 @@
 </head>
 <body>
     <div class="wrap">
-        <h3>15秒记忆力大考验</h3>
+        <h3>15秒注意力大考验</h3>
         <div id="main">
             <div class="main">
                 <box v-for="(item, index) in items" :key="index" :num = "item" :times = "times" :rest = "rest" :add-times.sync = 'times' :time-count.sync = 'timeCount'></box>
@@ -84,7 +84,7 @@
                 </div>
             </div>            
             <div class="top">
-                <h3>记忆力排行榜</h3>
+                <h3>注意力排行榜</h3>
                 <ul>
                     <li>
                         <span>排名</span>
@@ -98,12 +98,15 @@
                     </li>
                 </ul>
             </div>
-        </div>       
+        </div>
     </div>
     <template id="box">
         <li class="box" @click="clickBox()" :class="{right: isRight}" :data-id=num.id>
             <p>{{num.val}}</p>
         </li>
+    </template>
+    <template>
+        <div></div>
     </template>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios@0.19.0/dist/axios.min.js"></script>
@@ -123,7 +126,7 @@
 
             methods: {
                 /*
-                ** @desc: clickBox 点击方块的函数，点击正确的方块并计数，通过正确点击次数与方块数字相比较，是否按顺序点击方块，如果是，add-times加1次，并更改方块样式。如果所有方块都点完，则更改time-count的值
+                ** @desc: clickBox 点击方块的函数，点击正确的方块并计数，通过正确点击次数与方块数字相比较，是否按顺序点击方块，如果是，add-times加1次，并更改方块样式。如果所有方块都点完，则更改time-count的值。同时判断是否开始游戏，如果没有开始游戏则跳出提示
                 ** @method: vm.$emit(event, newval)
                 ** @param:
                 ** @return:
@@ -131,13 +134,15 @@
                 */
                 clickBox: function() {
                     let t = this.times + 1
-                    if(this.num.val == this.times) {
+                    if(this.num.val == this.times && this.rest == true) {
                         this.isRight = true;
                         this.$emit('update:add-times', t)
                         if(t == 26){
                             this.$emit('update:time-count', true)
                         }
-                    }                
+                    }else if(this.rest == false) {
+                        alert('请开始游戏');
+                    }
                 }
             },
             watch: {
@@ -169,7 +174,7 @@
                 // 创建方格
                 this.buildBox();
                 // 开始计时
-                this.totalTime();
+                // this.totalTime();
             },
 
             watch: {
